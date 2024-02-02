@@ -137,11 +137,24 @@ runs:
       shell: bash
       run: docker load -i /tmp/${{ env.DOCKER_KEY }}.tar
 
+
     - name: Run The Action
-      if: always()
+      id: gitstream-action
       shell: bash
       run: >-
+        env_file=env.user
+
+        touch $env_file
+
+        for var in $(env | cut -d "=" -f 1); do
+          value="${!var}"
+          echo "$var=$value" >> "$env_file"
+        done
+
+        docker pull gitstream/rules-engine:latest
+
         docker run
+
         --env-file $env_file
         -v $(pwd)/gitstream:/code
         -e HEAD_REF=$'upstream/${{ steps.safe-strings.outputs.head_ref }}'
@@ -149,7 +162,8 @@ runs:
         -e CLIENT_PAYLOAD=${{ steps.safe-strings.outputs.client_payload }}
         -e RULES_RESOLVER_URL=${{ github.event.inputs.resolver_url }}
         -e RULES_RESOLVER_TOKEN=${{ github.event.inputs.resolver_token }}
-        -e DEBUG_MODE=${{ github.event.inputs.debug_mode }} gitstream/rules-engine:latest
+        -e DEBUG_MODE=${{ github.event.inputs.debug_mode }}
+        gitstream/rules-engine
 
     - name: Cleanup
       if: ${{ always() }}
