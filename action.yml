@@ -156,16 +156,10 @@ runs:
         -e CLIENT_PAYLOAD=${{ steps.safe-strings.outputs.client_payload }}
         -e RULES_RESOLVER_URL=${{ github.event.inputs.resolver_url }}
         -e RULES_RESOLVER_TOKEN=${{ github.event.inputs.resolver_token }}
-        -e DEBUG_MODE=${{ github.event.inputs.debug_mode }}
-        gitstream/rules-engine:latest
+        -e DEBUG_MODE=${{ github.event.inputs.debug_mode }} gitstream/rules-engine:latest
 
     - name: Cleanup
       if: ${{ always() }}
       shell: bash
-      run: >-
-        echo "Cleaning up"
-
-        docker run
-        -v $(pwd)/gitstream:/code
-        --entrypoint ash
-        gitstream/rules-engine -c "rm -rf /code/*"
+      run: |
+        rm -rf gitstream
