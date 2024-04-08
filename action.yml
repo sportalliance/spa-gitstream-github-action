@@ -26,6 +26,10 @@ inputs:
     description: "Run parser in debug mode"
     required: false
     default: "false"
+  pull_docker_from_cache:
+    description: "If should store gitstream docker in GitHub cache"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -101,6 +105,17 @@ runs:
         ref: ${{ fromJSON(fromJSON(github.event.inputs.client_payload)).cmRepoRef }}
         path: "gitstream/cm/"
 
+    - name: Docker Layer Caching
+      if: ${{ inputs.pull_docker_from_cache == 'true' }}
+      uses: satackey/action-docker-layer-caching@v0.0.11
+      continue-on-error: true
+      with:
+        concurrency: 12
+
+    - name: Pull gitstream Docker
+      shell: bash
+      run: docker pull gitstream/rules-engine:latest
+
     - name: Run The Action
       if: always()
       shell: bash
@@ -114,8 +129,6 @@ runs:
           echo "$var=$value" >> "$env_file"
         done
 
-        docker pull gitstream/rules-engine:latest
-
         docker run
         --env-file $env_file
         -v $(pwd)/gitstream:/code
@@ -125,7 +138,7 @@ runs:
         -e RULES_RESOLVER_URL=${{ github.event.inputs.resolver_url }}
         -e RULES_RESOLVER_TOKEN=${{ github.event.inputs.resolver_token }}
         -e DEBUG_MODE=${{ github.event.inputs.debug_mode }}
-        gitstream/rules-engine
+        gitstream/rules-engine:latest
 
     - name: Cleanup
       if: ${{ always() }}
