@@ -37,7 +37,7 @@ runs:
 
     - uses: actions/setup-python@v5
       with:
-        python-version: 3.x
+        python-version: "3.12.6"
 
     - name: Create GitStream folder
       shell: bash
