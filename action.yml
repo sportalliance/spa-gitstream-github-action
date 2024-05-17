@@ -26,11 +26,11 @@ inputs:
     description: "Run parser in debug mode"
     required: false
     default: "false"
+
 runs:
   using: "composite"
   steps:
     - name: Create GitStream folder
-      id: create-gitstream-folder
       shell: bash
       run: |
         rm -rf gitstream
@@ -88,7 +88,6 @@ runs:
       shell: bash
 
     - name: Create cm folder
-      id: create-cm-folder
       shell: bash
       run: |
         cd gitstream
@@ -103,7 +102,7 @@ runs:
         path: "gitstream/cm/"
 
     - name: Run The Action
-      id: gitstream-action
+      if: always()
       shell: bash
       run: >-
         env_file=env.user
