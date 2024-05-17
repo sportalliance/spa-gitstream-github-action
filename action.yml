@@ -29,6 +29,7 @@ inputs:
   update_times_a_day:
     description: 'Number of times a day the docker should be pull from the docker registry. Whole number between 1 and 24'
     required: false
+    default: "1"
 
 runs:
   using: "composite"
@@ -136,6 +137,7 @@ runs:
 
     - name: Run The Action
       if: always()
+      shell: bash
       run: >-
         env_file=env.user
 
@@ -145,15 +147,15 @@ runs:
           value="${!var}"
           echo "$var=$value" >> "$env_file"
         done
-        docker run --env-file $env_file \
-          -v $(pwd)/gitstream:/code \
-          -e HEAD_REF=$'upstream/${{ steps.safe-strings.outputs.head_ref }}' \
-          -e BASE_REF=$'${{ steps.safe-strings.outputs.base_ref }}' \
-          -e CLIENT_PAYLOAD=${{ steps.safe-strings.outputs.client_payload }} \
-          -e RULES_RESOLVER_URL=${{ github.event.inputs.resolver_url }} \
-          -e RULES_RESOLVER_TOKEN=${{ github.event.inputs.resolver_token }} \
-          -e DEBUG_MODE=${{ github.event.inputs.debug_mode }} gitstream/rules-engine:latest
-      shell: bash
+
+        docker run --env-file $env_file
+        -v $(pwd)/gitstream:/code
+        -e HEAD_REF=$'upstream/${{ steps.safe-strings.outputs.head_ref }}'
+        -e BASE_REF=$'${{ steps.safe-strings.outputs.base_ref }}'
+        -e CLIENT_PAYLOAD=${{ steps.safe-strings.outputs.client_payload }}
+        -e RULES_RESOLVER_URL=${{ github.event.inputs.resolver_url }}
+        -e RULES_RESOLVER_TOKEN=${{ github.event.inputs.resolver_token }}
+        -e DEBUG_MODE=${{ github.event.inputs.debug_mode }} gitstream/rules-engine:latest
 
     - name: Cleanup
       if: ${{ always() }}
