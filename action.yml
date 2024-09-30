@@ -25,15 +25,14 @@ inputs:
   debug_mode:
     description: "Run parser in debug mode"
     required: false
-    default: "false"
-  update_times_a_day:
-    description: 'Number of times a day the docker should be pull from the docker registry. Whole number between 1 and 24'
-    required: false
-    default: "1"
+    default: false
 
 runs:
   using: "composite"
   steps:
+    - name: Deprecation Notice
+      shell: bash
+      run: echo "::warning::gitstream-github-action@v1 is deprecated and will be disabled soon. Please upgrade to gitstream-github-action@v2. For more information, follow  https://github.com/linear-b/gitstream-github-action/releases/tag/v2"
     - name: Create GitStream folder
       shell: bash
       run: |
@@ -105,38 +104,8 @@ runs:
         ref: ${{ fromJSON(fromJSON(github.event.inputs.client_payload)).cmRepoRef }}
         path: "gitstream/cm/"
 
-    - name: Get Docker cache key
-      id: cache-key
-      if: ${{ inputs.update_times_a_day }}
-      uses: actions/github-script@v7
-      env:
-        UPDATE_TIMES_A_DAY: ${{ inputs.update_times_a_day }}
-      with:
-        script: |
-          require('${{ github.action_path }}/script.js')(core);
-
-    - name: Cache Docker
-      id: cache-gitstream-docker
-      if: ${{ env.DOCKER_KEY }}
-      uses: actions/cache@v4
-      with:
-        path: /tmp/**.tar
-        key: ${{ env.DOCKER_KEY }}
-
-    - name: Docker Pull
-      if: steps.cache-gitstream-docker.outputs.cache-hit != 'true'
-      shell: bash
-      run: |
-        docker pull gitstream/rules-engine:latest
-        docker save -o /tmp/${{ env.DOCKER_KEY }}.tar gitstream/rules-engine:latest
-
-    - name: Docker Load
-      if: steps.cache-gitstream-docker.outputs.cache-hit == 'true'
-      shell: bash
-      run: docker load -i /tmp/${{ env.DOCKER_KEY }}.tar
-
     - name: Run The Action
-      if: always()
+      id: gitstream-action
       shell: bash
       run: >-
         env_file=env.user
@@ -148,7 +117,10 @@ runs:
           echo "$var=$value" >> "$env_file"
         done
 
+        docker pull gitstream/rules-engine:latest
+
         docker run
+
         --env-file $env_file
         -v $(pwd)/gitstream:/code
         -e HEAD_REF=$'upstream/${{ steps.safe-strings.outputs.head_ref }}'
@@ -156,10 +128,11 @@ runs:
         -e CLIENT_PAYLOAD=${{ steps.safe-strings.outputs.client_payload }}
         -e RULES_RESOLVER_URL=${{ github.event.inputs.resolver_url }}
         -e RULES_RESOLVER_TOKEN=${{ github.event.inputs.resolver_token }}
-        -e DEBUG_MODE=${{ github.event.inputs.debug_mode }} gitstream/rules-engine:latest
+        -e DEBUG_MODE=${{ github.event.inputs.debug_mode }}
+        gitstream/rules-engine
 
     - name: Cleanup
-      if: ${{ always() }}
+      if: always()
       shell: bash
       run: >-
         echo "Cleaning up"
