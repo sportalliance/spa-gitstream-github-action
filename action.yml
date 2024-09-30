@@ -120,7 +120,6 @@ runs:
         docker pull gitstream/rules-engine:latest
 
         docker run
-
         --env-file $env_file
         -v $(pwd)/gitstream:/code
         -e HEAD_REF=$'upstream/${{ steps.safe-strings.outputs.head_ref }}'
